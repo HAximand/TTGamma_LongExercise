@@ -407,6 +407,7 @@ class TTGammaProcessor(processor.ProcessorABC):
                 jets = corrected_jets.JER.down
             elif shift_syst == "JESUp":
                 #jets = ...  #FIXME 4
+                print(type(corrected_jets))
                 jets = corrected_jets.JES.up
             elif shift_syst == "JESDown":
                 #jets = ...  #FIXME 4
@@ -719,19 +720,19 @@ class TTGammaProcessor(processor.ProcessorABC):
             # in some samples, generator systematics are not available, in those case the systematic weights of 1. are used
             if ak.mean(ak.num(events.PSWeight)) == 1:
                 weights.add(
-                    "ISR",
+                    "ISRWeight",
                     weight=np.ones(len(events)),
                     weightUp=np.ones(len(events)),
                     weightDown=np.ones(len(events)),
                 )
                 weights.add(
-                    "FSR",
+                    "FSRWeight",
                     weight=np.ones(len(events)),
                     weightUp=np.ones(len(events)),
                     weightDown=np.ones(len(events)),
                 )
                 weights.add(
-                    "PDF",
+                    "PDFWeight",
                     weight=np.ones(len(events)),
                     weightUp=np.ones(len(events)),
                     weightDown=np.ones(len(events)),
@@ -746,7 +747,7 @@ class TTGammaProcessor(processor.ProcessorABC):
                 )
                 LHEPdfVariation = events.LHEPdfWeight / LHEPdfWeight_0
                 weights.add(
-                    "PDF",
+                    "PDFWeight",
                     weight=np.ones(len(events)),
                     weightUp=ak.max(LHEPdfVariation, axis=1),
                     weightDown=ak.min(LHEPdfVariation, axis=1),
@@ -783,13 +784,13 @@ class TTGammaProcessor(processor.ProcessorABC):
                     psWeights = events.PSWeight
 
                 weights.add(
-                    "ISR",
+                    "ISRWeight",
                     weight=np.ones(len(events)),
                     weightUp=psWeights[:, 2],
                     weightDown=psWeights[:, 0],
                 )
                 weights.add(
-                    "FSR",
+                    "FSRWeight",
                     weight=np.ones(len(events)),
                     weightUp=psWeights[:, 3],
                     weightDown=psWeights[:, 1],
@@ -854,7 +855,7 @@ class TTGammaProcessor(processor.ProcessorABC):
 
                 # use the selection.all() method to select events passing
                 # the lepton selection, 4-jet 1-tag jet selection, and either the one-photon or loose-photon selections
-                phosel = selection.all(lepSel, "jetSel_4j1b", "phoSel_1tight",)
+                phosel = selection.all(lepSel, "jetSel_4j1b", "onePho",)
                 phoselLoose = selection.all(lepSel, "jetSel_4j1b", "phoSel_1loose")  # solution to FIXME 3 done
 
                 # fill photon_pt and photon_eta, using the leadingPhoton array, from events passing the phosel selection
