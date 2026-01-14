@@ -255,7 +255,12 @@ class TTGammaProcessor(processor.ProcessorABC):
                 systematic_axis,
                 storage="weight",
             ),
-            "photon_eta": hist.Hist( # FIXME 3
+            "photon_eta": hist.Hist( # FIXME 3 done
+                eta_axis,
+                phoCategory_axis,
+                lep_axis,
+                systematic_axis,
+                storage="weight",
             ),
             "photon_chIso": hist.Hist(
                 chIso_axis,
@@ -789,10 +794,8 @@ class TTGammaProcessor(processor.ProcessorABC):
 
                 # use the selection.all() method to select events passing
                 # the lepton selection, 4-jet 1-tag jet selection, and either the one-photon or loose-photon selections
-                phosel = selection.all(lepSel, "jetSel_4j1b", "onePho")
-                phoselLoose = selection.all(
-                    ...
-                )  # solution to FIXME 3
+                phosel = selection.all(lepSel, "jetSel_4j1b", "phoSel_1tight",)
+                phoselLoose = selection.all(lepSel, "jetSel_4j1b", "phoSel_1loose")  # solution to FIXME 3 done
 
                 # fill photon_pt and photon_eta, using the leadingPhoton array, from events passing the phosel selection
                 # Make sure to apply the correct mask to the category, weight, and photon pt or eta
@@ -809,15 +812,30 @@ class TTGammaProcessor(processor.ProcessorABC):
 
                 # fill eta histogram, for events passing the phosel selection
                 output["photon_eta"].fill(
-                ) # solution to FIXME 3
+                    eta=leadingPhoton.eta[phosel],
+                    category=phoCategory[phosel],
+                    lepFlavor=lepton,
+                    systematic=syst,
+                    weight=evtWeight[phosel],
+                ) # solution to FIXME 3 done
 
                 # fill M3 histogram, for events passing the phosel selection
                 output["M3"].fill(
-                ) # solution to FIXME 3
+                    M3=leadingPhoton.M3[phosel],
+                    category=phoCategory[phosel],
+                    lepFlavor=lepton,
+                    systematic=syst,
+                    weight=evtWeight[phosel],
+                ) # solution to FIXME 3 done
 
                 # fill photon_chIso histogram, using the loosePhotons array (photons passing all cuts, except the charged hadron isolation cuts)
                 output["photon_chIso"].fill(
-                ) # solution to FIXME 3
+                    chIso=leadingPhotonLoose.chIso[phoselLoose],
+                    category=phoCategory[phoselLoose],
+                    lepFlavor=lepton,
+                    systematic=syst,
+                    weight=evtWeight[phoselLoose],
+                ) # solution to FIXME 3 done
 
             # use the selection.all() method to select events passing the eleSel or muSel selection,
             # and the 3-jet 0-btag selection, and have exactly one photon
@@ -829,7 +847,12 @@ class TTGammaProcessor(processor.ProcessorABC):
             for lepton in phosel_3j0t.keys():
                 mask = phosel_3j0t[lepton]
                 output["photon_lepton_mass_3j0t"].fill(
-                ) # solution to FIXME 3
+                    mass=gammaMasses[lepton][mask],
+                    category=phoCategory[mask],
+                    lepFlavor=lepton,
+                    systematic=syst,
+                    weight=evtWeight[mask],
+                ) # solution to FIXME 3 done
 
 
         if shift_syst is None:
