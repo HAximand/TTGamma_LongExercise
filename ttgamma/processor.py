@@ -209,13 +209,13 @@ def categorizeGenPhoton(photon):
 
     # define the photon categories for tight photon events
     # a genuine photon is a reconstructed photon which is matched to a generator level photon, and does not have a hadronic parent
-    #isGenPho = ...  # FIXME 2b
+    isGenPho = matchedPho & ~hadronicParent # FIXME 2b
     # a hadronic photon is a reconstructed photon which is matched to a generator level photon, but has a hadronic parent
-    #isHadPho = ... #  FIXME 2b
+    isHadPho = matchedPho & hadronicParent #  FIXME 2b
     # a misidentified electron is a reconstructed photon which is matched to a generator level electron
-    #isMisIDele = # FIXME 2b matchedEle and matchedPho are exclusive
+    isMisIDele = matchedEle# FIXME 2b matchedEle and matchedPho are exclusive
     # a hadronic/fake photon is a reconstructed photon that does not fall within any of the above categories
-    #isHadFake =  # FIXME 2b
+    isHadFake = ~(matchedPho or matchedEle)# FIXME 2b
 
     # integer definition for the photon category axis
     # since false = 0 , true = 1, this only leaves the integer value of the category it falls into
@@ -525,13 +525,13 @@ class TTGammaProcessor(processor.ProcessorABC):
         # Find all possible combinations of 3 tight jets in the events
         # Hint: using the ak.combinations(array,n) method chooses n unique items from array.
         # More hints are in the twiki
-        #triJet = ... # FIXME 2a
+        triJet = ak.combinations(tightJet, 3, fields=["first", "second", "third"]) # FIXME 2a
         # Sum together jets from the triJet object and find its pt and mass
-        #triJetPt =   ...  # solution to FIXME 2a
-        #triJetMass = ...  # solution to FIXME 2a
+        triJetPt = (triJet.first + triJet.second + triJet.third).pt  # solution to FIXME 2a
+        triJetMass = (triJet.first + triJet.second + triJet.third).mass # solution to FIXME 2a
         # define the M3 variable, the triJetMass of the combination with the highest triJetPt value
-        # (ak.argmax and ak.singletons will be helpful here)
-        #M3 = ... # solution to FIXME 2a        
+        highPtIdx= ak.argmax(triJetPt, axis=-1, keepdims=True)
+        M3 = triJetMass[highPtIdx] # solution to FIXME 2a        
         
         # For all the other event-level variables, we can form the variables from just
         # the leading (in pt) objects rather than form all combinations and arbitrate them
@@ -549,7 +549,7 @@ class TTGammaProcessor(processor.ProcessorABC):
         egammaMass  = (leadingElectron + leadingPhoton).mass
         # define mugammaMass analogously
      
-        #mugammaMass = ...  # solution to FIXME 2a
+        mugammaMass = (leadingMuon + leadingPhoton).mass # solution to FIXME 2a
         gammaMasses = {'electron': egammaMass, 'muon': mugammaMass }
 
         ###################
