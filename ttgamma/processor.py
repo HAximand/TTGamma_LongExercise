@@ -865,7 +865,7 @@ class TTGammaProcessor(processor.ProcessorABC):
 
                 # fill M3 histogram, for events passing the phosel selection
                 output["M3"].fill(
-                    M3=leadingPhoton.M3[phosel],
+                    M3=M3[phosel],
                     category=phoCategory[phosel],
                     lepFlavor=lepton,
                     systematic=syst,
