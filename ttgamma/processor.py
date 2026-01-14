@@ -126,7 +126,11 @@ def selectElectrons(events):
         abs(events.Electron.eta) > 1.479
     ) & (abs(events.Electron.dz) < 0.2)
 
-    electronSelectTight = ((electrons.pt > 35) & (abs(electrons.eta) < 2.1) & (electrons.cutBased >= 4) & elePassDXY & elePassDZ & eleEtaGap
+    electronSelectTight = (
+        (events.Electron.pt > 35)
+        & (abs(events.Electron.eta) < 2.1)
+        & (events.Electron.cutBased >= 4)
+        & elePassDXY & elePassDZ & eleEtaGap
     )  # FIXME 1a
 
     # select loose electrons
@@ -186,7 +190,8 @@ def selectPhotons(photons):
     tightPhotons = photons[photonSelect & photonID]  # FIXME 1a
     # select loosePhotons, the subset of photons passing the photonSelect cut and all photonID cuts
     # except the charged hadron isolation cut applied (photonID_NoChIso)
-    loosePhotons = photons[photonSelect & photonID_NoChIso & np.invert(photon_ChIsoCut)]  # FIXME 1a
+    # HELP! Maybe come back to make loosePhotons orthogonal to tightPhotons with np.invert ChIsoCut
+    loosePhotons = photons[photonSelect & photonID_NoChIso]# & np.invert(photon_ChIsoCut)]  # FIXME 1a
 
     return tightPhotons, loosePhotons
 
@@ -422,10 +427,15 @@ class TTGammaProcessor(processor.ProcessorABC):
         # (bit-wise selected from the jetID variable), and pass the cross-cleaning cuts defined above
         mediumJetIDbit = 0b10
 
-        tightJet = jets[(jets.pt >= 30) & (abs(jets.eta) < 2.4) & ((jets.JetId & mediumJetIDbit) == 2) & jetMuMask & jetEleMask & jetPhoMask
+        tightJet = jets[
+            (jets.pt >= 30)
+            & (abs(jets.eta) < 2.4)
+            & ((jets.jetId & mediumJetIDbit) == 2)
+            & jetMuMask & jetEleMask & jetPhoMask
         ]  # FIXME 1a
 
         # label the subset of tightJet which pass the Deep CSV tagger
+        # Medium working point from https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation2016Legacy
         bTagWP = 0.6321  # 2016 DeepCSV working point
         tightJet["btagged"] = tightJet.btagDeepB > bTagWP  # FIXME 1a
 
@@ -451,6 +461,7 @@ class TTGammaProcessor(processor.ProcessorABC):
 
         # oneMuon should be true if there is exactly one tight muon in the event
         # (the ak.num() method returns the number of objects in each row of a jagged array)
+        # HELP! Check that there is no none in lepton collections
         selection.add("oneMuon", ak.num(tightMuons) == 1)
         # zeroMuon should be true if there are no tight muons in the event
         selection.add("zeroMuon", ak.num(tightMuons) == 0)   # FIXME 1b
@@ -492,26 +503,31 @@ class TTGammaProcessor(processor.ProcessorABC):
         )
         #   And another which selects events with at least 3 tightJet and exactly zero b-tagged jet
         selection.add(
-            "jetSel_3j1b",
+            "jetSel_3j0b",
             (ak.num(tightJet) >= 3) & (ak.sum(tightJet.btagged, axis=-1) == 0),
         )  # FIXME 1b
 
         # add selection for events with exactly 0 tight photons
         selection.add(
-            "phoSel_0tight",
+            "zeroPho",
             (ak.num(tightPhotons) == 0),
         )  #FIXME 1b
 
         # add selection for events with exactly 1 tight photon
         selection.add(
-            "phoSel_1tight",
+            "onePho",
             (ak.num(tightPhotons) == 1),
         )  # FIXME 1b
 
         # add selection for events with exactly 1 loose photon
         selection.add(
-            "phoSel_1loose",
+            "oneLoosePho",
             (ak.num(loosePhotons) == 1),
+        )  # FIXME 1b
+
+        selection.add(
+            "zeroLoosePho",
+            (ak.num(loosePhotons) == 0),
         )  # FIXME 1b
 
         # useful debugger for selection efficiency
@@ -537,7 +553,7 @@ class TTGammaProcessor(processor.ProcessorABC):
         # define the M3 variable, the triJetMass of the combination with the highest triJetPt value
         # (ak.argmax and ak.singletons will be helpful here)
         highPtIdx= ak.argmax(triJetPt, axis=-1, keepdims=True)
-        M3 = triJetMass[highPtIdx] # solution to FIXME 2a               
+        M3 = ak.firsts(triJetMass[highPtIdx]) # solution to FIXME 2a               
         
         # For all the other event-level variables, we can form the variables from just
         # the leading (in pt) objects rather than form all combinations and arbitrate them
@@ -865,7 +881,7 @@ class TTGammaProcessor(processor.ProcessorABC):
 
                 # fill M3 histogram, for events passing the phosel selection
                 output["M3"].fill(
-                    M3=leadingPhoton.M3[phosel],
+                    M3=M3[phosel],
                     category=phoCategory[phosel],
                     lepFlavor=lepton,
                     systematic=syst,
